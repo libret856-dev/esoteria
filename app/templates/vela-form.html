@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="form-container">
+  <h1>{{ titulo }}</h1>
+  <form method="POST" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+      {{ form.nombre.label }}
+      {{ form.nombre(class="form-control") }}
+    </div>
+    <div class="form-group">
+      {{ form.imagen.label }}
+      <div class="file-input-wrapper">
+        <label for="imagen" class="file-input-label">Seleccionar imagen</label>
+        {{ form.imagen(class="form-control", id="imagen", onchange="previewImagen(this)") }}
+        <span id="file-name" class="file-name">Ningún archivo seleccionado</span>
+      </div>
+      <img id="imagen-preview" class="image-preview hidden" alt="Vista previa">
+    </div>
+    <div class="form-group">
+      {{ form.descripcion.label }}
+      <small style="display:block; color:rgba(255,215,0,0.5); font-size:0.8rem; margin-bottom:0.4rem;">Características físicas: color, tamaño, peso, aroma, materiales, etc.</small>
+      {{ form.descripcion(class="form-control", rows=4) }}
+    </div>
+    <div class="form-group">
+      {{ form.categorias.label }}
+      <p class="help-text" style="font-size:0.8rem; color:rgba(255,215,0,0.5); margin-bottom:0.5rem;">Toca cada categoría para seleccionarla:</p>
+      {{ form.categorias(class="form-control", id="categorias", style="display:none") }}
+      <div class="chip-container" id="categorias-chips">
+        {% set selected_ids = form.categorias.data or [] %}
+        {% for cat in categorias %}
+          <span class="chip {% if cat.id in selected_ids %}chip--active{% endif %}"
+                data-value="{{ cat.id }}"
+                title="{{ cat.descripcion or 'Sin descripción' }}"
+                style="--chip-color:{{ cat.color or '#FFD700' }}; --chip-glow:{{ cat.color or '#FFD700' }}40">
+            <span class="chip-check">✓</span>
+            {{ cat.nombre }}
+          </span>
+        {% endfor %}
+      </div>
+    </div>
+    {{ form.submit(class="btn") }}
+    <a href="{{ url_for('public.dashboard') }}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

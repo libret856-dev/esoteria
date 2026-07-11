@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="tab-nav">
+  <button class="tab-btn {{ 'active' if tab != 'oraciones' }}" onclick="showTab('velas')">🕯️ Velas</button>
+  <button class="tab-btn {{ 'active' if tab == 'oraciones' }}" onclick="showTab('oraciones')">📿 Oraciones</button>
+</div>
+
+<form method="GET" class="search-form" style="margin-bottom:1.5rem">
+  <input type="hidden" name="tab" value="{{ tab }}">
+  <input type="text" name="q" placeholder="Buscar por nombre..." value="{{ q }}" class="search-input">
+  <button type="submit" class="btn">Filtrar</button>
+  {% if q %}
+    <a href="?tab={{ tab }}" class="btn btn-secondary">Limpiar</a>
+  {% endif %}
+</form>
+
+<section id="tab-velas" class="tab-content {{ 'active' if tab == 'velas' }}">
+  <div class="section-header">
+    <h2>Velas</h2>
+    <a href="{{ url_for('velas.create') }}" class="btn">Nueva vela</a>
+  </div>
+  {% if velas %}
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Imagen</th>
+        <th>Descripción</th>
+        <th>Categorías</th>
+        <th>Creado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for vela in velas %}
+      <tr>
+        <td>{{ vela.id }}</td>
+        <td>{{ vela.nombre }}</td>
+        <td>
+          {% if vela.imagen %}
+            <img src="{{ vela.imagen }}" alt="" class="table-thumb">
+          {% else %}—{% endif %}
+        </td>
+        <td class="col-content preview">{{ vela.descripcion[:80] if vela.descripcion else '—' }}{% if vela.descripcion and vela.descripcion|length > 80 %}...{% endif %}</td>
+        <td>{% for cat in vela.categorias %}<span class="tag">{{ cat.nombre }}</span> {% endfor %}</td>
+        <td>{{ vela.created_at.strftime('%d/%m/%Y') if vela.created_at else '—' }}</td>
+        <td class="actions">
+          <a href="{{ url_for('velas.edit', id=vela.id) }}" class="btn-small">Editar</a>
+          <form method="POST" action="{{ url_for('velas.delete', id=vela.id) }}" style="display:inline" onsubmit="return confirm('¿Eliminar esta vela?')">
+            <button type="submit" class="btn-small btn-danger">Eliminar</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if velas_pagination and velas_pagination.pages > 1 %}
+  <div class="pagination">
+    {% if velas_pagination.has_prev %}
+      <a href="?tab=velas&page={{ velas_pagination.prev_num }}{% if q %}&q={{ q }}{% endif %}" class="pagination-link">«</a>
+    {% endif %}
+    {% for p in velas_pagination.iter_pages(left_edge=1, left_current=2, right_current=3, right_edge=1) %}
+      {% if p %}
+        <a href="?tab=velas&page={{ p }}{% if q %}&q={{ q }}{% endif %}" class="pagination-link {{ 'active' if p == velas_pagination.page }}">{{ p }}</a>
+      {% else %}
+        <span class="pagination-dots">…</span>
+      {% endif %}
+    {% endfor %}
+    {% if velas_pagination.has_next %}
+      <a href="?tab=velas&page={{ velas_pagination.next_num }}{% if q %}&q={{ q }}{% endif %}" class="pagination-link">»</a>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% elif q %}
+    <p class="no-results">No se encontraron resultados para "{{ q }}"</p>
+  {% else %}
+    <p class="no-results">No hay velas registradas</p>
+  {% endif %}
+</section>
+
+<section id="tab-oraciones" class="tab-content {{ 'active' if tab == 'oraciones' }}">
+  <div class="section-header">
+    <h2>Oraciones</h2>
+    <a href="{{ url_for('oraciones.create') }}" class="btn">Nueva oración</a>
+  </div>
+  {% if oraciones %}
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Imagen</th>
+        <th class="col-content">Contenido</th>
+        <th class="col-content">Propósito</th>
+        <th>Categorías</th>
+        <th>Creado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for oracion in oraciones %}
+      <tr>
+        <td>{{ oracion.id }}</td>
+        <td>{{ oracion.nombre }}</td>
+        <td>
+          {% if oracion.imagen %}
+            <img src="{{ oracion.imagen }}" alt="" class="table-thumb">
+          {% else %}—{% endif %}
+        </td>
+        <td class="col-content preview">{{ oracion.contenido[:80] }}{% if oracion.contenido|length > 80 %}...{% endif %}</td>
+        <td class="col-content preview">{{ oracion.proposito[:80] if oracion.proposito else '—' }}{% if oracion.proposito and oracion.proposito|length > 80 %}...{% endif %}</td>
+        <td>{% for cat in oracion.categorias %}<span class="tag">{{ cat.nombre }}</span> {% endfor %}</td>
+        <td>{{ oracion.created_at.strftime('%d/%m/%Y') if oracion.created_at else '—' }}</td>
+        <td class="actions">
+          <a href="{{ url_for('oraciones.edit', id=oracion.id) }}" class="btn-small">Editar</a>
+          <form method="POST" action="{{ url_for('oraciones.delete', id=oracion.id) }}" style="display:inline" onsubmit="return confirm('¿Eliminar esta oración?')">
+            <button type="submit" class="btn-small btn-danger">Eliminar</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if oraciones_pagination and oraciones_pagination.pages > 1 %}
+  <div class="pagination">
+    {% if oraciones_pagination.has_prev %}
+      <a href="?tab=oraciones&page={{ oraciones_pagination.prev_num }}{% if q %}&q={{ q }}{% endif %}" class="pagination-link">«</a>
+    {% endif %}
+    {% for p in oraciones_pagination.iter_pages(left_edge=1, left_current=2, right_current=3, right_edge=1) %}
+      {% if p %}
+        <a href="?tab=oraciones&page={{ p }}{% if q %}&q={{ q }}{% endif %}" class="pagination-link {{ 'active' if p == oraciones_pagination.page }}">{{ p }}</a>
+      {% else %}
+        <span class="pagination-dots">…</span>
+      {% endif %}
+    {% endfor %}
+    {% if oraciones_pagination.has_next %}
+      <a href="?tab=oraciones&page={{ oraciones_pagination.next_num }}{% if q %}&q={{ q }}{% endif %}" class="pagination-link">»</a>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% elif q %}
+    <p class="no-results">No se encontraron resultados para "{{ q }}"</p>
+  {% else %}
+    <p class="no-results">No hay oraciones registradas</p>
+  {% endif %}
+</section>
+
+<script>
+function showTab(tab) {
+  const url = new URL(window.location);
+  url.searchParams.set('tab', tab);
+  url.searchParams.set('page', '1');
+  window.location.href = url.toString();
+}
+</script>
+{% endblock %}

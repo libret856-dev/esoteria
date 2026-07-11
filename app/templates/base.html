@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Esotería - Catálogo Espiritual</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="universo"></div>
+  <div class="estrellas"></div>
+  <div class="overlay-oscuro"></div>
+  <canvas id="estrellasDinamicas" style="position:fixed; top:0; left:0; z-index:-1; pointer-events:none;"></canvas>
+  <header>
+    <div class="header-inner">
+      <a href="{{ url_for('public.home') }}" class="logo">Esotería</a>
+      <button class="hamburger" id="hamburger" aria-label="Menú">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <nav id="nav">
+        <a href="{{ url_for('public.home') }}">Inicio</a>
+        <a href="{{ url_for('public.catalog') }}">Catálogo</a>
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('public.dashboard') }}">Dashboard</a>
+          <a href="{{ url_for('categorias.list_create') }}">Categorías</a>
+          <a href="{{ url_for('auth.change_password') }}">Cambiar contraseña</a>
+          <a href="{{ url_for('auth.logout') }}">Cerrar sesión</a>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}">Iniciar sesión</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-messages">
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    <p>Esotería &copy; 2026</p>
+  </footer>
+<script>
+document.getElementById('hamburger')?.addEventListener('click', function() {
+  this.classList.toggle('open');
+  document.getElementById('nav').classList.toggle('open');
+});
+
+const canvas = document.getElementById('estrellasDinamicas');
+const ctx = canvas.getContext('2d');
+let estrellas = [];
+
+function ajustarTamaño() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', ajustarTamaño);
+ajustarTamaño();
+
+class Estrella {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height;
+    this.tamaño = Math.random() * 1.8 + 0.2;
+    this.velocidad = Math.random() * 0.08 + 0.02;
+    this.color = Math.random() > 0.85 ? '#FFE8A3' : '#FFFFFF';
+  }
+  mover() {
+    this.y += this.velocidad;
+    if (this.y > canvas.height) this.reset();
+  }
+  dibujar() {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.tamaño, 0, Math.PI * 2);
+    ctx.fillStyle = this.color;
+    ctx.fill();
+  }
+}
+
+function iniciarEstrellas(cantidad = 80) {
+  estrellas = Array.from({ length: cantidad }, () => new Estrella());
+}
+
+function animar() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  estrellas.forEach(estrella => { estrella.mover(); estrella.dibujar(); });
+  requestAnimationFrame(animar);
+}
+
+var starCount = window.innerWidth <= 768 ? 25 : 80;
+iniciarEstrellas(starCount); animar();
+
+function initChipToggles() {
+  document.querySelectorAll('.chip-container').forEach(function(container) {
+    var select = container.previousElementSibling;
+    if (!select || select.tagName !== 'SELECT') return;
+    container.querySelectorAll('.chip').forEach(function(chip) {
+      if (chip.classList.contains('chip-filter')) return;
+      chip.addEventListener('click', function() {
+        this.classList.toggle('chip--active');
+        var selected = [];
+        container.querySelectorAll('.chip--active').forEach(function(c) {
+          if (!c.classList.contains('chip-filter')) {
+            selected.push(c.getAttribute('data-value'));
+          }
+        });
+        Array.from(select.options).forEach(function(opt) {
+          opt.selected = selected.indexOf(opt.value) !== -1;
+        });
+        var event = new Event('change', { bubbles: true });
+        select.dispatchEvent(event);
+      });
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  initChipToggles();
+});
+
+function previewImagen(input) {
+  const fileName = document.getElementById('file-name');
+  const preview = document.getElementById('imagen-preview');
+  if (input.files && input.files[0]) {
+    fileName.textContent = input.files[0].name;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      preview.src = e.target.result;
+      preview.classList.remove('hidden');
+    };
+    reader.readAsDataURL(input.files[0]);
+  } else {
+    fileName.textContent = 'Ningún archivo seleccionado';
+    preview.classList.add('hidden');
+    preview.src = '';
+  }
+}
+</script>
+{% block modal %}{% endblock %}
+</body>
+</html>

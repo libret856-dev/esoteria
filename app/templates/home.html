@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hero">
+  <h1>Bienvenido a Esotería</h1>
+  <p>Tu catálogo espiritual de velas y oraciones</p>
+  <div class="hero-links">
+    <a href="{{ url_for('public.catalog') }}" class="btn">Explorar catálogo</a>
+  </div>
+</div>
+
+<div class="home-sections">
+  <div class="home-card">
+    <h2>🕯️ Velas</h2>
+    <p>Descubre nuestra colección de velas espirituales, cada una con propiedades únicas para diferentes propósitos.</p>
+    <a href="{{ url_for('public.catalog') }}?tipo=velas" class="btn">Ver velas</a>
+  </div>
+  <div class="home-card">
+    <h2>📿 Oraciones</h2>
+    <p>Encuentra oraciones poderosas para cada necesidad, desde protección hasta prosperidad.</p>
+    <a href="{{ url_for('public.catalog') }}?tipo=oraciones" class="btn">Ver oraciones</a>
+  </div>
+</div>
+{% endblock %}

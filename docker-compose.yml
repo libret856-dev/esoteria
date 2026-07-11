@@ -1,0 +1,26 @@
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/esoteria
+      - SECRET_KEY=clave-secreta-cambiar-en-produccion
+      - ADMIN_PASSWORD=admin123
+    depends_on:
+      - db
+    volumes:
+      - uploads:/app/app/static/uploads
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=esoteria
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
+  uploads:

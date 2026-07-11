@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="catalog-header">
+  <h1>Catálogo</h1>
+
+  <div class="catalog-tabs">
+    <a href="{{ url_for('public.catalog', q=q, categoria=categoria_id) }}"
+       class="catalog-tab {{ 'active' if not tipo }}">Todo</a>
+    <a href="{{ url_for('public.catalog', tipo='velas', q=q, categoria=categoria_id) }}"
+       class="catalog-tab {{ 'active' if tipo == 'velas' }}">🕯️ Velas</a>
+    <a href="{{ url_for('public.catalog', tipo='oraciones', q=q, categoria=categoria_id) }}"
+       class="catalog-tab {{ 'active' if tipo == 'oraciones' }}">📿 Oraciones</a>
+  </div>
+
+  <form method="GET" class="search-form">
+    {% if tipo %}<input type="hidden" name="tipo" value="{{ tipo }}">{% endif %}
+    <input type="text" name="q" placeholder="Buscar..." value="{{ q }}" class="search-input">
+    <button type="submit" class="btn">Filtrar</button>
+    {% if q or categoria_id %}
+      <a href="{{ url_for('public.catalog', tipo=tipo if tipo else None) }}" class="btn btn-secondary">Limpiar</a>
+    {% endif %}
+  </form>
+
+  {% if categoria_id %}
+    {% set ns = namespace(cat_nombre='', cat_color='#FFD700') %}
+    {% for cat in categorias %}
+      {% if cat.id == categoria_id %}
+        {% set ns.cat_nombre = cat.nombre %}
+        {% set ns.cat_color = cat.color or '#FFD700' %}
+      {% endif %}
+    {% endfor %}
+  <div class="filter-active" style="--cat-color:{{ ns.cat_color }}">
+    <div class="filter-active-content">
+      <span class="filter-active-icon" style="color:{{ ns.cat_color }}">⬡</span>
+      <div class="filter-active-texts">
+        <span class="filter-active-label">FILTRANDO POR</span>
+        <span class="filter-active-name">{{ ns.cat_nombre }}</span>
+      </div>
+    </div>
+    <a href="{{ url_for('public.catalog', tipo=tipo if tipo else None, q=q) }}" class="filter-active-clear" title="Quitar filtro">✕ Limpiar filtro</a>
+  </div>
+  {% else %}
+  <div class="filter-idle">Mostrando todos los elementos</div>
+  {% endif %}
+
+  {% if categorias %}
+  <button class="btn btn-glosario" onclick="toggleGlosario()" id="glosarioBtn">📖 Glosario de categorías</button>
+  <div class="glosario" id="glosario">
+    <div class="glosario-grid">
+      <a href="{{ url_for('public.catalog', tipo=tipo if tipo else None, q=q) }}"
+         class="glosario-item {% if not categoria_id %}glosario-item--active{% endif %}"
+         style="--cat-color:#FFD700">
+        <span class="glosario-nombre">Todas las categorías</span>
+        <span class="glosario-desc">Mostrar todos los elementos</span>
+      </a>
+      {% for cat in categorias %}
+      <a href="{{ url_for('public.catalog', tipo=tipo if tipo else None, q=q, categoria=cat.id) }}"
+         class="glosario-item {% if categoria_id == cat.id %}glosario-item--active{% endif %}"
+         style="--cat-color:{{ cat.color or '#FFD700' }}">
+        <span class="glosario-nombre">{{ cat.nombre }}</span>
+        <span class="glosario-desc">{{ cat.descripcion or 'Sin descripción' }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if velas %}
+<section class="catalog-section">
+  <h2>🕯️ Velas <span class="count">{{ velas_pagination.total if velas_pagination else velas|length }}</span></h2>
+  <div class="card-grid">
+    {% for vela in velas %}
+      <div class="card card-vela" onclick="openModal('vela', {{ vela.id }})">
+        {% if vela.imagen %}
+          <img src="{{ vela.imagen }}" alt="{{ vela.nombre }}" class="card-img" loading="lazy">
+        {% else %}
+          {% set cats = vela.categorias %}
+          {% if cats|length == 0 %}
+          <div class="card-img-placeholder card-img-placeholder--vela">🕯️</div>
+          {% elif cats|length == 1 %}
+          {% set c = cats[0] %}
+          <div class="card-img-placeholder" style="background:linear-gradient(135deg,{{ c.color or '#2A0E5C' }}B0,{{ c.color or '#4B1B9A' }}40)">🕯️</div>
+          {% elif cats|length == 2 %}
+          {% set c1 = cats[0] %}{% set c2 = cats[1] %}
+          <div class="card-img-placeholder" style="background:linear-gradient(135deg,{{ c1.color or '#2A0E5C' }}B0,{{ c2.color or '#4B1B9A' }}80)">🕯️</div>
+          {% else %}
+          <div class="card-img-placeholder" style="background:linear-gradient(135deg{% for c in cats %},{{ c.color or '#2A0E5C' }}{% endfor %})">🕯️</div>
+          {% endif %}
+        {% endif %}
+        <div class="card-body">
+          <strong>{{ vela.nombre }}</strong>
+          <div class="card-tags">
+            {% for cat in vela.categorias %}
+              <span class="tag" title="{{ cat.descripcion or '' }}" style="background:{{ cat.color or '#FFD700' }}22;color:{{ cat.color or '#FFD700' }};border-color:{{ cat.color or '#FFD700' }}44">{{ cat.nombre }}</span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% if velas_pagination and velas_pagination.pages > 1 %}
+{% set page_param = 'page_velas' if not tipo else 'page' %}
+<div class="pagination">
+  {% if velas_pagination.has_prev %}
+    <a href="?{{ page_param }}={{ velas_pagination.prev_num }}{% if q %}&q={{ q }}{% endif %}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}" class="pagination-link">«</a>
+  {% endif %}
+  {% for p in velas_pagination.iter_pages(left_edge=1, left_current=2, right_current=3, right_edge=1) %}
+    {% if p %}
+      <a href="?{{ page_param }}={{ p }}{% if q %}&q={{ q }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}" class="pagination-link {{ 'active' if p == velas_pagination.page }}">{{ p }}</a>
+    {% else %}
+      <span class="pagination-dots">…</span>
+    {% endif %}
+  {% endfor %}
+  {% if velas_pagination.has_next %}
+    <a href="?{{ page_param }}={{ velas_pagination.next_num }}{% if q %}&q={{ q }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}" class="pagination-link">»</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endif %}
+
+{% if oraciones %}
+<section class="catalog-section">
+  <h2>📿 Oraciones <span class="count">{{ oraciones_pagination.total if oraciones_pagination else oraciones|length }}</span></h2>
+  <div class="card-grid">
+    {% for oracion in oraciones %}
+      <div class="card card-oracion" onclick="openModal('oracion', {{ oracion.id }})">
+        {% if oracion.imagen %}
+          <img src="{{ oracion.imagen }}" alt="{{ oracion.nombre }}" class="card-img" loading="lazy">
+        {% else %}
+        {% set cats = oracion.categorias %}
+        {% if cats|length == 0 %}
+        <div class="card-img-placeholder card-img-placeholder--oracion">📿</div>
+        {% elif cats|length == 1 %}
+        {% set c = cats[0] %}
+        <div class="card-img-placeholder" style="background:linear-gradient(135deg,{{ c.color or '#0E2A5C' }}B0,{{ c.color or '#1B4B9A' }}40)">📿</div>
+        {% elif cats|length == 2 %}
+        {% set c1 = cats[0] %}{% set c2 = cats[1] %}
+        <div class="card-img-placeholder" style="background:linear-gradient(135deg,{{ c1.color or '#0E2A5C' }}B0,{{ c2.color or '#1B4B9A' }}80)">📿</div>
+        {% else %}
+        <div class="card-img-placeholder" style="background:linear-gradient(135deg{% for c in cats %},{{ c.color or '#0E2A5C' }}{% endfor %})">📿</div>
+        {% endif %}
+        {% endif %}
+        <div class="card-body">
+          <strong>{{ oracion.nombre }}</strong>
+          <div class="card-tags">
+            {% for cat in oracion.categorias %}
+              <span class="tag" title="{{ cat.descripcion or '' }}" style="background:{{ cat.color or '#FFD700' }}22;color:{{ cat.color or '#FFD700' }};border-color:{{ cat.color or '#FFD700' }}44">{{ cat.nombre }}</span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% if oraciones_pagination and oraciones_pagination.pages > 1 %}
+{% set page_param = 'page_oraciones' if not tipo else 'page' %}
+<div class="pagination">
+  {% if oraciones_pagination.has_prev %}
+    <a href="?{{ page_param }}={{ oraciones_pagination.prev_num }}{% if q %}&q={{ q }}{% endif %}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}" class="pagination-link">«</a>
+  {% endif %}
+  {% for p in oraciones_pagination.iter_pages(left_edge=1, left_current=2, right_current=3, right_edge=1) %}
+    {% if p %}
+      <a href="?{{ page_param }}={{ p }}{% if q %}&q={{ q }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}" class="pagination-link {{ 'active' if p == oraciones_pagination.page }}">{{ p }}</a>
+    {% else %}
+      <span class="pagination-dots">…</span>
+    {% endif %}
+  {% endfor %}
+  {% if oraciones_pagination.has_next %}
+    <a href="?{{ page_param }}={{ oraciones_pagination.next_num }}{% if q %}&q={{ q }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}" class="pagination-link">»</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endif %}
+
+{% if not velas and not oraciones %}
+  <p class="no-results">No se encontraron resultados</p>
+{% endif %}
+
+<script>
+/* =============================================
+   Speech Synthesis para oraciones
+   ============================================= */
+let speechSupported = false;
+
+function checkSpeechVoices() {
+  if (!window.speechSynthesis) return;
+  var voices = speechSynthesis.getVoices();
+  speechSupported = voices.some(function(v) { return v.lang.startsWith('es'); });
+}
+
+if (window.speechSynthesis) {
+  checkSpeechVoices();
+  speechSynthesis.addEventListener('voiceschanged', checkSpeechVoices);
+}
+
+function toggleLectura(texto, btn) {
+  if (!window.speechSynthesis) return;
+  if (speechSynthesis.speaking) {
+    speechSynthesis.cancel();
+    if (btn) btn.innerHTML = '🔊 Leer oración';
+    return;
+  }
+  var utter = new SpeechSynthesisUtterance(texto);
+  utter.lang = 'es-ES';
+  utter.rate = 0.9;
+  var voices = speechSynthesis.getVoices();
+  var esVoice = voices.find(function(v) { return v.lang.startsWith('es'); });
+  if (esVoice) utter.voice = esVoice;
+  utter.onstart = function() {
+    if (btn) btn.innerHTML = '⏹ Detener oración';
+  };
+  utter.onend = function() {
+    if (btn) btn.innerHTML = '🔊 Leer oración';
+  };
+  utter.onerror = function() {
+    if (btn) btn.innerHTML = '🔊 Leer oración';
+  };
+  speechSynthesis.speak(utter);
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function escapeHtmlWithBreaks(text) {
+  return escapeHtml(text).replace(/\n/g, '<br>');
+}
+
+async function openModal(tipo, id) {
+  const endpoint = tipo === 'oracion' ? 'oraciones' : 'velas';
+  const res = await fetch(`/api/${endpoint}/${id}`);
+  const data = await res.json();
+  const body = document.getElementById('modal-body');
+
+  if (tipo === 'vela') {
+    const imgHtml = data.imagen
+      ? `<img src="${data.imagen}" alt="${escapeHtml(data.nombre)}" class="modal-img">`
+      : `<div class="modal-img-placeholder">🕯️</div>`;
+    const descHtml = data.descripcion
+      ? `<p class="modal-text">${escapeHtmlWithBreaks(data.descripcion)}</p>`
+      : '';
+    const oracionesRelHtml = data.oraciones_relacionadas && data.oraciones_relacionadas.length
+      ? `<div class="modal-relacionados">
+          <h3 class="modal-relacionados-title">📿 Oraciones relacionadas</h3>
+          <div class="modal-rel-grid">
+            ${data.oraciones_relacionadas.map(o =>
+              `<div class="modal-rel-card" onclick="event.stopPropagation(); openModal('oracion', ${o.id})">
+                📿 ${escapeHtml(o.nombre)}
+              </div>`
+            ).join('')}
+          </div>
+         </div>`
+      : '';
+    body.innerHTML = `
+      ${imgHtml}
+      <h2>${escapeHtml(data.nombre)}</h2>
+      <div class="modal-tags">
+        ${data.categorias.map(c => `<span class="tag" style="background:${c.color || '#FFD700'}22;color:${c.color || '#FFD700'};border-color:${c.color || '#FFD700'}44">${escapeHtml(c.nombre)}</span>`).join('')}
+      </div>
+      ${descHtml}
+      ${oracionesRelHtml}
+    `;
+  } else {
+    const velasRelHtml = data.velas_relacionadas && data.velas_relacionadas.length
+      ? `<div class="modal-relacionados">
+          <h3 class="modal-relacionados-title">🕯️ Velas relacionadas</h3>
+          <div class="modal-rel-grid">
+            ${data.velas_relacionadas.map(v =>
+              `<div class="modal-rel-card" onclick="event.stopPropagation(); openModal('vela', ${v.id})">
+                🕯️ ${escapeHtml(v.nombre)}
+              </div>`
+            ).join('')}
+          </div>
+         </div>`
+      : '';
+    const propositoHtml = data.proposito
+      ? `<div class="accordion">
+          <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+            <span>¿Para qué funciona?</span>
+            <span class="accordion-icon">▼</span>
+          </div>
+          <div class="accordion-body">
+            <p>${escapeHtmlWithBreaks(data.proposito)}</p>
+          </div>
+         </div>`
+      : '';
+    const imgHtmlO = data.imagen
+      ? `<img src="${data.imagen}" alt="${escapeHtml(data.nombre)}" class="modal-img">`
+      : `<div class="modal-img-placeholder">📿</div>`;
+    body.innerHTML = `
+      ${imgHtmlO}
+      <h2>${escapeHtml(data.nombre)}</h2>
+      <div class="modal-tags">
+        ${data.categorias.map(c => `<span class="tag" style="background:${c.color || '#FFD700'}22;color:${c.color || '#FFD700'};border-color:${c.color || '#FFD700'}44">${escapeHtml(c.nombre)}</span>`).join('')}
+      </div>
+      <p class="modal-text">${escapeHtmlWithBreaks(data.contenido)}</p>
+      ${speechSupported ? '<button class="btn-listen" onclick="toggleLectura(document.querySelector(\'.modal-text\').textContent, this)">🔊 Leer oración</button>' : ''}
+      ${propositoHtml}
+      ${velasRelHtml}
+    `;
+  }
+  const modal = document.getElementById('modal');
+  modal.classList.remove('hidden', 'closing');
+  void modal.offsetWidth;
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(e) {
+  const modal = document.getElementById('modal');
+  if (!e || e.target === modal) {
+    if (window.speechSynthesis && speechSynthesis.speaking) {
+      speechSynthesis.cancel();
+    }
+    modal.classList.add('closing');
+    setTimeout(() => {
+      modal.classList.add('hidden');
+      modal.classList.remove('closing');
+      document.body.style.overflow = '';
+    }, 300);
+  }
+}
+
+function toggleGlosario() {
+  const glosario = document.getElementById('glosario');
+  const btn = document.getElementById('glosarioBtn');
+  const isOpen = glosario.classList.contains('open');
+  if (isOpen) {
+    glosario.classList.remove('open');
+    btn.textContent = '📖 Glosario de categorías';
+  } else {
+    glosario.classList.add('open');
+    btn.textContent = '✕ Cerrar glosario';
+  }
+}
+</script>
+{% endblock %}
+
+{% block modal %}
+<div id="modal" class="modal hidden" onclick="closeModal(event)">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <span class="modal-close" onclick="closeModal()">&times;</span>
+    <div id="modal-body"></div>
+  </div>
+</div>
+{% endblock %}
