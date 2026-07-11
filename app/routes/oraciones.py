@@ -1,8 +1,7 @@
-import os
 import io
 from flask import Blueprint, render_template, redirect, url_for, flash, current_app
 from flask_login import login_required
-from werkzeug.utils import secure_filename
+
 from PIL import Image
 import cloudinary.uploader
 from app.models import db, Oracion, Categoria
@@ -36,11 +35,13 @@ def create():
                     flash('El archivo no es una imagen válida.', 'error')
                     categorias = Categoria.query.order_by(Categoria.id.desc()).all()
                     return render_template('oracion-form.html', form=form, titulo='Nueva Oración', categorias=categorias)
-                filename = secure_filename(file.filename)
                 img.thumbnail((800, 800), Image.LANCZOS)
                 if img.mode != 'RGB':
                     img = img.convert('RGB')
-                result = cloudinary.uploader.upload(file.stream, folder='esoteria')
+                buffer = io.BytesIO()
+                img.save(buffer, format=img.format or 'PNG')
+                buffer.seek(0)
+                result = cloudinary.uploader.upload(buffer, folder='esoteria', resource_type='image')
                 oracion.imagen = result['secure_url']
         for cat_id in form.categorias.data:
             cat = db.session.get(Categoria, cat_id)
@@ -81,11 +82,13 @@ def edit(id):
                     form.categorias.data = [c.id for c in oracion.categorias]
                     categorias = Categoria.query.order_by(Categoria.id.desc()).all()
                     return render_template('oracion-form.html', form=form, titulo='Editar Oración', categorias=categorias)
-                filename = secure_filename(file.filename)
                 img.thumbnail((800, 800), Image.LANCZOS)
                 if img.mode != 'RGB':
                     img = img.convert('RGB')
-                result = cloudinary.uploader.upload(file.stream, folder='esoteria')
+                buffer = io.BytesIO()
+                img.save(buffer, format=img.format or 'PNG')
+                buffer.seek(0)
+                result = cloudinary.uploader.upload(buffer, folder='esoteria', resource_type='image')
                 oracion.imagen = result['secure_url']
         oracion.categorias = []
         for cat_id in form.categorias.data:
